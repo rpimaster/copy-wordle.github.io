@@ -2498,6 +2498,7 @@ const currentRow = () => {
 const judgeResult = () => {
 	if ( noAccents(word) === noAccentSolution) {
 		animateTileDance(currentRow())
+		alert(🎊🎊YOU WIN!!!!🎊🎊)
 	}
 	else if (tries >= maxTries) {
 		youVeryMuchLose()
