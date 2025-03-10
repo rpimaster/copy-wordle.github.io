@@ -1,4 +1,3 @@
-
 // DATA
 let word = ''
 
@@ -1119,7 +1118,6 @@ const allWords = [
 	'frmol',
 	'frnda',
 	'front',
-	'silon',
 	'froté',
 	'fufna',
 	'fučka',
@@ -1867,17 +1865,6 @@ const allWords = [
 	'výron',
 	'zmija',
 	'znova',
-	'výlev',
-	'zobák',
-	'výraz',
-	'zopár',
-	'zosun',
-	'zošit',
-	'zrada',
-	'zrast',
-	'zosuv',
-	'zrazu',
-	'zrána',
 	'výdoj',
 	'zubáč',
 	'zubor',
@@ -2052,7 +2039,6 @@ const allWords = [
 	'židák',
 	'žieňa',
 	'žitie',
-	'živáň',
 	'živec',
 	'vidno',
 	'vodík',
@@ -2141,7 +2127,6 @@ const allWords = [
 	'záber',
 	'zábeh',
 	'záčin',
-	'zábal',
 	'ornát',
 	'osebe',
 	'osada',
@@ -2398,26 +2383,333 @@ let lettersInRow = {
 
 // KEYBOARD
 
-document.addEventListener('keydown', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
+	// Track if a key was recently pressed to prevent duplicates
+	let lastKeyPressTime = 0;
+	const DEBOUNCE_TIME = 300; // milliseconds
+	
+	// Function to handle key presses with debounce
+	const handleKeyPress = (letter) => {
+		const now = Date.now();
+		if (now - lastKeyPressTime > DEBOUNCE_TIME) {
+			lastKeyPressTime = now;
+			addLetter(letter);
+		}
+	};
+	
+	// Add event listeners to the on-screen keyboard
+	document.querySelectorAll('.keyboard .tile').forEach(key => {
+		// For iOS devices, use only touchend to prevent double triggers
+		key.addEventListener('touchend', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			
+			const letter = key.textContent;
+			handleKeyPress(letter);
+		}, { passive: false });
+		
+		// For desktop devices, use click
+		key.addEventListener('click', (e) => {
+			// Only process if it's not a touch event
+			if (e.pointerType !== 'touch' && (!e.sourceCapabilities || !e.sourceCapabilities.firesTouchEvents)) {
+				e.stopPropagation();
+				const letter = key.textContent;
+				handleKeyPress(letter);
+			}
+		});
+	});
 
-	if (event.key === 'Enter') {
-		submitWord()
-	}
-	else if (event.key === 'Backspace') {
-		removeLetter()
-	}
-	else {
-		addLetter(event.key)
-	}
+	// Create Enter button
+	const enterButton = document.createElement('div');
+	enterButton.className = 'tile special-key';
+	enterButton.textContent = '↵';
+	enterButton.id = 'enter';
+	
+	// For iOS devices
+	enterButton.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		
+		const now = Date.now();
+		if (now - lastKeyPressTime > DEBOUNCE_TIME) {
+			lastKeyPressTime = now;
+			submitWord();
+		}
+	}, { passive: false });
+	
+	// For desktop
+	enterButton.addEventListener('click', (e) => {
+		if (e.pointerType !== 'touch' && (!e.sourceCapabilities || !e.sourceCapabilities.firesTouchEvents)) {
+			e.stopPropagation();
+			submitWord();
+		}
+	});
 
+	// Create Backspace button
+	const backspaceButton = document.createElement('div');
+	backspaceButton.className = 'tile special-key';
+	backspaceButton.textContent = '←';
+	backspaceButton.id = 'backspace';
+	
+	// For iOS devices
+	backspaceButton.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		
+		const now = Date.now();
+		if (now - lastKeyPressTime > DEBOUNCE_TIME) {
+			lastKeyPressTime = now;
+			removeLetter();
+		}
+	}, { passive: false });
+	
+	// For desktop
+	backspaceButton.addEventListener('click', (e) => {
+		if (e.pointerType !== 'touch' && (!e.sourceCapabilities || !e.sourceCapabilities.firesTouchEvents)) {
+			e.stopPropagation();
+			removeLetter();
+		}
+	});
 
-})
+	// Add the buttons to the keyboard
+	const keyboard = document.querySelector('.keyboard');
+	keyboard.appendChild(enterButton);
+	keyboard.appendChild(backspaceButton);
+	
+	// Add a hidden input field to capture mobile keyboard input
+	const mobileInput = document.createElement('input');
+	mobileInput.type = 'text';
+	mobileInput.id = 'mobile-input';
+	mobileInput.autocomplete = 'off';
+	mobileInput.autocorrect = 'off';
+	mobileInput.autocapitalize = 'off';
+	mobileInput.spellcheck = false;
+	document.body.appendChild(mobileInput);
+	
+	// Style the input to be minimally visible but still functional
+	mobileInput.style.position = 'fixed';
+	mobileInput.style.opacity = '0.01';
+	mobileInput.style.height = '1px';
+	mobileInput.style.width = '1px';
+	mobileInput.style.pointerEvents = 'none';
+	
+	// Add event listeners for the mobile input
+	mobileInput.addEventListener('input', (e) => {
+		const lastChar = e.target.value.slice(-1);
+		if (lastChar) {
+			addLetter(lastChar);
+		}
+		// Clear the input after processing
+		e.target.value = '';
+	});
+	
+	mobileInput.addEventListener('keydown', (e) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			submitWord();
+		} else if (e.key === 'Backspace') {
+			e.preventDefault();
+			removeLetter();
+		}
+	});
+	
+	// Add a button to focus the input and bring up the keyboard
+	const keyboardButton = document.createElement('button');
+	keyboardButton.textContent = '⌨️ Open Keyboard';
+	keyboardButton.id = 'keyboard-button';
+	keyboardButton.style.marginTop = '10px';
+	keyboardButton.style.padding = '8px 16px';
+	keyboardButton.style.backgroundColor = '#565758';
+	keyboardButton.style.color = '#fff';
+	keyboardButton.style.border = 'none';
+	keyboardButton.style.borderRadius = '4px';
+	keyboardButton.style.cursor = 'pointer';
+	
+	// For iOS devices
+	keyboardButton.addEventListener('touchend', (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		mobileInput.focus();
+	}, { passive: false });
+	
+	// For desktop
+	keyboardButton.addEventListener('click', (e) => {
+		if (e.pointerType !== 'touch' && (!e.sourceCapabilities || !e.sourceCapabilities.firesTouchEvents)) {
+			e.stopPropagation();
+			mobileInput.focus();
+		}
+	});
+	
+	// Add the button after the keyboard
+	document.querySelector('footer').appendChild(keyboardButton);
+	
+	// Modify the document click handler to be more specific
+	document.querySelector('.board').addEventListener('click', () => {
+		mobileInput.focus();
+	});
+
+	// Handle orientation changes
+	window.addEventListener('orientationchange', handleOrientationChange);
+	window.addEventListener('resize', debounce(handleOrientationChange, 250));
+	
+	// Initial check
+	handleOrientationChange();
+});
+
+// Debounce function to prevent excessive calls
+function debounce(func, wait) {
+	let timeout;
+	return function() {
+		const context = this;
+		const args = arguments;
+		clearTimeout(timeout);
+		timeout = setTimeout(() => func.apply(context, args), wait);
+	};
+}
+
+// Function to set up landscape layout
+function setupLandscapeLayout() {
+    // Check if landscape layout already exists
+    if (!document.querySelector('.landscape-layout')) {
+        // Get references to the elements we need to move
+        const board = document.querySelector('.board');
+        const keyboard = document.querySelector('.keyboard');
+        
+        // Create main landscape container
+        const landscapeLayout = document.createElement('div');
+        landscapeLayout.className = 'landscape-layout';
+        
+        // Create container for the board
+        const boardContainer = document.createElement('div');
+        boardContainer.className = 'board-container';
+        
+        // Create container for the keyboard
+        const keyboardContainer = document.createElement('div');
+        keyboardContainer.className = 'keyboard-container';
+        
+        // Move elements to their containers
+        if (board && board.parentNode) {
+            boardContainer.appendChild(board);
+        }
+        
+        if (keyboard && keyboard.parentNode) {
+            keyboardContainer.appendChild(keyboard);
+        }
+        
+        // Add containers to landscape layout
+        landscapeLayout.appendChild(boardContainer);
+        landscapeLayout.appendChild(keyboardContainer);
+        
+        // Add landscape layout to body after header
+        const header = document.querySelector('header');
+        if (header && header.nextSibling) {
+            document.body.insertBefore(landscapeLayout, header.nextSibling);
+        } else {
+            document.body.appendChild(landscapeLayout);
+        }
+    }
+}
+
+// Function to reset to original layout
+function resetToOriginalLayout() {
+    const landscapeLayout = document.querySelector('.landscape-layout');
+    
+    if (landscapeLayout) {
+        const board = landscapeLayout.querySelector('.board');
+        const keyboard = landscapeLayout.querySelector('.keyboard');
+        
+        // Move board back to body
+        if (board) {
+            document.body.appendChild(board);
+        }
+        
+        // Move keyboard back to footer
+        if (keyboard) {
+            const footer = document.querySelector('footer');
+            if (footer) {
+                footer.insertBefore(keyboard, document.getElementById('keyboard-button'));
+            } else {
+                document.body.appendChild(keyboard);
+            }
+        }
+        
+        landscapeLayout.remove();
+    }
+}
+
+// Handle orientation changes
+function handleOrientationChange() {
+    const isLandscape = window.innerWidth > window.innerHeight;
+    const isSmallHeight = window.innerHeight < 500;
+    
+    if (isLandscape && isSmallHeight) {
+        // We're in landscape mode on a small device
+        document.body.classList.add('landscape-mode');
+        
+        // Create landscape layout
+        setupLandscapeLayout();
+        
+        // Adjust the keyboard layout
+        const keyboard = document.querySelector('.keyboard');
+        if (window.innerHeight < 380) {
+            keyboard.style.gridTemplateColumns = 'repeat(5, 1fr)';
+            document.querySelectorAll('.special-key').forEach(key => {
+                key.style.gridColumn = 'span 2';
+            });
+        } else {
+            keyboard.style.gridTemplateColumns = 'repeat(7, 1fr)';
+            document.querySelectorAll('.special-key').forEach(key => {
+                key.style.gridColumn = 'span 3';
+            });
+        }
+        
+        // Ensure the keyboard button is visible
+        const keyboardButton = document.getElementById('keyboard-button');
+        if (keyboardButton) {
+            keyboardButton.style.position = 'static';
+            keyboardButton.style.marginTop = '10px';
+        }
+    } else {
+        // We're in portrait mode or on a larger screen
+        document.body.classList.remove('landscape-mode');
+        
+        resetToOriginalLayout();
+        
+        // Reset keyboard layout based on screen width
+        const keyboard = document.querySelector('.keyboard');
+        if (keyboard) {
+            if (window.innerWidth <= 940) {
+                keyboard.style.gridTemplateColumns = 'repeat(13, 1fr)';
+                document.querySelectorAll('.special-key').forEach(key => {
+                    key.style.gridColumn = 'span 2';
+                });
+            } else {
+                keyboard.style.gridTemplateColumns = 'repeat(26, 1fr)';
+                document.querySelectorAll('.special-key').forEach(key => {
+                    key.style.gridColumn = '';
+                });
+            }
+        }
+        
+        // Reset keyboard button position
+        const keyboardButton = document.getElementById('keyboard-button');
+        if (keyboardButton) {
+            keyboardButton.style.position = '';
+            keyboardButton.style.marginTop = '10px';
+        }
+    }
+    
+    // Ensure the mobile input is properly positioned
+    const mobileInput = document.getElementById('mobile-input');
+    if (mobileInput) {
+        mobileInput.style.top = isLandscape ? '50%' : '80%';
+    }
+}
 
 // SUBMIT
 const submitWord = () => {
 	if (word.length !== maxWordLenght) return
 
-	//IS this a reall word
 	if (!noAccentWords.includes(noAccents(word)) ) {
       animateRowShake(currentRow())
 	  return
@@ -2436,19 +2728,6 @@ const submitWord = () => {
           judgeResult()
 	}, 1500)
 	
-	// is this a real world?
-	/* if (!noAccentWords.includes(noAccents(word))) {
-		animateRowShake(currentRow())
-		return
-	}
-
-	findLettersInRow()
-	highlightLetters(currentRow())
-	animateTileReveal(currentRow())
-
-	setTimeout(() => {
-		judgeResult()
-	}, 1500) */
 }
 
 // ADD LETTER
@@ -2466,7 +2745,6 @@ const addLetter = (character) => {
 		animateTileBounce(tile)
 	}
 
-	// console.log(word)
 }
 
 // REMOVE LETTER
@@ -2552,3 +2830,24 @@ function noAccents(str) {
 	return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }
 
+function afterMove() {
+    saveGameState();
+}
+
+// Add haptic feedback for supported devices
+function triggerHapticFeedback() {
+    if (navigator.vibrate) {
+        navigator.vibrate(15); 
+    }
+}
+
+const handleKeyPress = (letter) => {
+    if (!isProcessingTouch) {
+        isProcessingTouch = true;
+        triggerHapticFeedback();
+        addLetter(letter);
+        setTimeout(() => {
+            isProcessingTouch = false;
+        }, 100);
+    }
+};
